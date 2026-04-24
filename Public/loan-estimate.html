@@ -153,17 +153,47 @@
   <p style="font-size:.8rem;color:#5a6a78;line-height:1.8">
     &copy; 2025 LoanLens &nbsp;&middot;&nbsp;
     Provided for informational purposes only. Not financial advice. &nbsp;&middot;&nbsp;
+    <a href="javascript:void(0)" onclick="openDiscModal()" style="color:#5a6a74;text-decoration:underline;cursor:pointer">Disclosures</a> &nbsp;&middot;&nbsp;
     <a href="/lenders.html" target="_blank" style="color:#c8922a;text-decoration:none;font-weight:600">Are you a Loan Officer? Advertise on LoanLens &rarr;</a>
   </p>
-  
-    <div style="border-top:1px solid #1e2d3a;margin-top:16px;padding-top:16px;font-size:.72rem;color:#3a4a54;line-height:1.8;text-align:left;max-width:900px;margin-left:auto;margin-right:auto">
-      <strong style="color:#5a6a74">Licensing &amp; Regulatory Disclosures</strong><br>
-      Jesse Kenner, NMLS #44182 &nbsp;&middot;&nbsp; Mortgage Equity Partners, NMLS #1936 &nbsp;&middot;&nbsp; Providence Branch NMLS #2466854<br>
-      Licensed Mortgage Lender &mdash; Rhode Island License #20224341LL &nbsp;&middot;&nbsp; Licensed in MA &amp; RI<br>
-      Verify license at <a href="https://www.nmlsconsumeraccess.org" target="_blank" style="color:#5a6a74;text-decoration:underline">nmlsconsumeraccess.org</a><br><br>
-      <strong style="color:#5a6a74">&#9632; Equal Housing Lender</strong> &nbsp;&middot;&nbsp;
-      LoanLens is an informational comparison tool and is not a mortgage lender, broker, or financial advisor. Submitting a request does not constitute a loan application and does not obligate you to proceed with any loan. Loan terms are determined solely by the lender. All loans subject to credit approval, underwriting, and applicable federal and state law. Not all borrowers will qualify.
-    </div>
 </footer>
+
+<!-- Disclosure Modal -->
+<div id="disc-modal" style="display:none;position:fixed;inset:0;background:rgba(10,16,22,.85);backdrop-filter:blur(4px);z-index:9999;align-items:center;justify-content:center;padding:20px" onclick="if(event.target===this)this.style.display='none'">
+  <div style="background:#0f1923;border-radius:14px;max-width:640px;width:100%;max-height:80vh;overflow-y:auto;border:1px solid #1e2d3a;box-shadow:0 32px 80px rgba(0,0,0,.6)">
+    <div style="background:#0a1219;padding:18px 24px;border-bottom:2px solid #c8922a;display:flex;justify-content:space-between;align-items:center;position:sticky;top:0">
+      <span style="font-family:'DM Sans',sans-serif;font-weight:700;font-size:.95rem;color:#f5f0e8">Licensing &amp; Regulatory Disclosures</span>
+      <button onclick="document.getElementById('disc-modal').style.display='none'" style="background:none;border:none;color:#7a8a94;font-size:1.4rem;cursor:pointer;line-height:1;padding:0 4px">&times;</button>
+    </div>
+    <div style="padding:24px;font-family:'DM Sans',sans-serif;font-size:.82rem;color:#b8b0a4;line-height:1.8">
+      <p style="margin-bottom:12px"><strong style="color:#f5f0e8">Loan Officer</strong><br>
+      Jesse Kenner &nbsp;&middot;&nbsp; NMLS #44182<br>
+      Mortgage Equity Partners &nbsp;&middot;&nbsp; NMLS #1936<br>
+      Providence Branch NMLS #2466854<br>
+      Rhode Island Lender License #20224341LL<br>
+      Licensed in Massachusetts &amp; Rhode Island</p>
+
+      <p style="margin-bottom:12px"><a href="https://www.nmlsconsumeraccess.org" target="_blank" style="color:#c8922a;text-decoration:underline">Verify license at nmlsconsumeraccess.org</a></p>
+
+      <p style="margin-bottom:12px"><strong style="color:#f5f0e8">&#9632; Equal Housing Lender</strong><br>
+      All loans subject to credit approval, underwriting, and applicable federal and state law. Not all borrowers will qualify. Loan terms are determined solely by the lender.</p>
+
+      <p style="margin-bottom:12px"><strong style="color:#f5f0e8">About LoanLens</strong><br>
+      LoanLens is an informational mortgage comparison tool and is not a mortgage lender, broker, or financial advisor. Nothing on this site constitutes financial, legal, or mortgage advice. Submitting an estimate request does not constitute a loan application and does not obligate you to proceed with any loan.</p>
+
+      <p style="margin-bottom:12px"><strong style="color:#f5f0e8">Privacy</strong><br>
+      LoanLens does not store, log, or retain any documents you upload. Uploaded Loan Estimates are analyzed in real time and immediately discarded. Your contact information submitted via the estimate request form is shared only with the featured loan officer for the purpose of preparing a mortgage estimate.</p>
+
+      <p style="margin-bottom:0"><strong style="color:#f5f0e8">RESPA</strong><br>
+      Loan officers featured on LoanLens pay a flat zip-code-based advertising fee. No referral fees, kickbacks, or unearned compensation are paid in connection with any mortgage transaction, in compliance with Section 8 of the Real Estate Settlement Procedures Act (RESPA).</p>
+    </div>
+  </div>
+</div>
+<script>
+  function openDiscModal() {
+    var m = document.getElementById('disc-modal');
+    m.style.display = 'flex';
+  }
+</script>
 </body>
 </html>
