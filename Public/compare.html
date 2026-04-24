@@ -1,0 +1,297 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Compare Mortgage Lender Fees Side-by-Side | LoanLens</title>
+<meta name="description" content="Upload your Loan Estimates and instantly see every fee side-by-side. Free AI-powered mortgage comparison tool. No login. No credit check.">
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700;900&family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --ink: #0f1923;
+    --paper: #f5f0e8;
+    --cream: #faf7f2;
+    --gold: #c8922a;
+    --gold-light: #e8b84b;
+    --muted: #7a7265;
+    --border: #d9d2c5;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'DM Sans', sans-serif; background: var(--cream); color: var(--ink); }
+</style>
+<style>
+  .hero {
+    background: var(--ink);
+    padding: 60px 32px 48px;
+    text-align: center;
+    border-bottom: 3px solid var(--gold);
+    position: relative;
+    overflow: hidden;
+  }
+  .hero::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(ellipse at 70% 50%, rgba(200,146,42,.08) 0%, transparent 70%);
+  }
+  .hero-badge {
+    display: inline-block;
+    background: var(--gold);
+    color: var(--ink);
+    font-size: .72rem;
+    font-weight: 700;
+    letter-spacing: .12em;
+    text-transform: uppercase;
+    padding: 4px 14px;
+    border-radius: 2px;
+    margin-bottom: 20px;
+  }
+  .hero h1 {
+    font-family: 'Playfair Display', serif;
+    font-size: clamp(2rem, 5vw, 3.2rem);
+    font-weight: 900;
+    color: var(--paper);
+    line-height: 1.15;
+    margin-bottom: 16px;
+    position: relative;
+  }
+  .hero h1 em { color: var(--gold-light); font-style: normal; }
+  .hero p {
+    font-size: 1.05rem;
+    color: #b8b0a4;
+    max-width: 560px;
+    margin: 0 auto 32px;
+    line-height: 1.7;
+    position: relative;
+  }
+  .hero-cta {
+    display: inline-block;
+    background: var(--gold);
+    color: var(--ink);
+    font-weight: 700;
+    font-size: 1rem;
+    padding: 14px 32px;
+    border-radius: 6px;
+    text-decoration: none;
+    transition: background .2s;
+    position: relative;
+  }
+  .hero-cta:hover { background: var(--gold-light); }
+  .trust-bar {
+    background: #0a1219;
+    padding: 14px 32px;
+    display: flex;
+    justify-content: center;
+    gap: 32px;
+    flex-wrap: wrap;
+    border-bottom: 1px solid #1e2d3a;
+  }
+  .trust-item {
+    font-size: .8rem;
+    color: #7a8a94;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .trust-item span { color: var(--gold); font-weight: 700; }
+  .how-section {
+    max-width: 900px;
+    margin: 60px auto;
+    padding: 0 32px;
+  }
+  .how-section h2 {
+    font-family: 'Playfair Display', serif;
+    font-size: 2rem;
+    font-weight: 700;
+    text-align: center;
+    margin-bottom: 48px;
+    color: var(--ink);
+  }
+  .steps {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: 24px;
+  }
+  .step {
+    background: white;
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 28px 24px;
+    position: relative;
+  }
+  .step-num {
+    width: 36px;
+    height: 36px;
+    background: var(--gold);
+    color: var(--ink);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 900;
+    font-size: 1rem;
+    margin-bottom: 14px;
+  }
+  .step h3 { font-size: 1rem; font-weight: 700; margin-bottom: 8px; color: var(--ink); }
+  .step p { font-size: .88rem; color: var(--muted); line-height: 1.6; }
+  .fee-section {
+    background: var(--ink);
+    padding: 60px 32px;
+    text-align: center;
+    color: var(--paper);
+  }
+  .fee-section h2 {
+    font-family: 'Playfair Display', serif;
+    font-size: 1.8rem;
+    margin-bottom: 12px;
+  }
+  .fee-section p { color: #b8b0a4; margin-bottom: 32px; max-width: 520px; margin-left: auto; margin-right: auto; line-height: 1.7; }
+  .fee-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    justify-content: center;
+    max-width: 700px;
+    margin: 0 auto 40px;
+  }
+  .fee-tag {
+    background: #162030;
+    border: 1px solid #1e2d3a;
+    border-radius: 6px;
+    padding: 7px 14px;
+    font-size: .82rem;
+    color: #b8b0a4;
+  }
+  .fee-tag.lender { border-color: rgba(200,146,42,.4); color: var(--gold-light); }
+  .cta-section {
+    background: var(--cream);
+    padding: 60px 32px;
+    text-align: center;
+  }
+  .cta-section h2 {
+    font-family: 'Playfair Display', serif;
+    font-size: 2rem;
+    margin-bottom: 12px;
+    color: var(--ink);
+  }
+  .cta-section p { color: var(--muted); margin-bottom: 32px; font-size: 1rem; }
+  .btn-primary {
+    display: inline-block;
+    background: var(--gold);
+    color: var(--ink);
+    font-weight: 700;
+    font-size: 1rem;
+    padding: 14px 36px;
+    border-radius: 6px;
+    text-decoration: none;
+    transition: background .2s;
+  }
+  .btn-primary:hover { background: var(--gold-light); }
+  @media (max-width: 600px) {
+    .trust-bar { gap: 16px; }
+    .how-section { padding: 0 16px; margin: 40px auto; }
+  }
+</style>
+</head>
+<body>
+<nav style="background:#0a1219;padding:12px 32px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid #1e2d3a">
+  <a href="/" style="text-decoration:none;display:flex;align-items:center">
+    <svg viewBox="0 0 320 74" height="38" xmlns="http://www.w3.org/2000/svg" aria-label="LoanLens">
+      <text x="0" y="58" font-family="Georgia,'Times New Roman',serif" font-size="52" font-weight="700" fill="#f5f0e8">L</text>
+      <circle cx="60" cy="40" r="17" fill="none" stroke="#c8922a" stroke-width="3.5"/>
+      <circle cx="60" cy="40" r="8" fill="#c8922a" opacity="0.22"/>
+      <line x1="72" y1="52" x2="84" y2="64" stroke="#c8922a" stroke-width="4" stroke-linecap="round"/>
+      <text x="80" y="58" font-family="Georgia,'Times New Roman',serif" font-size="52" font-weight="700" fill="#f5f0e8">an</text>
+      <line x1="162" y1="10" x2="162" y2="64" stroke="#3a3530" stroke-width="1.5"/>
+      <text x="172" y="58" font-family="Georgia,'Times New Roman',serif" font-size="52" font-weight="400" fill="#c8922a">Lens</text>
+    </svg>
+  </a>
+  <a href="/" style="font-family:'DM Sans',sans-serif;font-size:.82rem;color:#7a8a94;text-decoration:none;font-weight:500">&larr; Back to Comparison Tool</a>
+</nav>
+<section class="hero">
+  <div class="hero-badge">Free Tool &middot; No Login Required</div>
+  <h1>See Every Lender Fee<br><em>Side by Side</em></h1>
+  <p>Upload your Loan Estimates and our AI instantly breaks down every fee — so you know exactly which lender is really cheaper.</p>
+  <a href="/" class="hero-cta">Compare My Estimates Now &rarr;</a>
+</section>
+
+<div class="trust-bar">
+  <div class="trust-item"><span>&#10003;</span> Free — always</div>
+  <div class="trust-item"><span>&#10003;</span> No login required</div>
+  <div class="trust-item"><span>&#10003;</span> No credit check</div>
+  <div class="trust-item"><span>&#10003;</span> Compare up to 3 lenders</div>
+  <div class="trust-item"><span>&#10003;</span> Results in under 30 seconds</div>
+</div>
+
+<section class="how-section">
+  <h2>How It Works</h2>
+  <div class="steps">
+    <div class="step">
+      <div class="step-num">1</div>
+      <h3>Upload Your Estimates</h3>
+      <p>Drag and drop your Loan Estimate PDFs or Word docs. Upload 2 or 3 — whichever you have.</p>
+    </div>
+    <div class="step">
+      <div class="step-num">2</div>
+      <h3>AI Reads Every Fee</h3>
+      <p>Our AI extracts and classifies every line item — lender-controlled fees, third-party costs, and loan terms.</p>
+    </div>
+    <div class="step">
+      <div class="step-num">3</div>
+      <h3>See Who Wins</h3>
+      <p>Get a clear side-by-side comparison with green/red highlights, rate analysis, breakeven calculations, and red flags.</p>
+    </div>
+    <div class="step">
+      <div class="step-num">4</div>
+      <h3>Request a Competing Quote</h3>
+      <p>Not happy with your options? Request a free estimate from a local lender who knows you&rsquo;re comparison shopping — so they bring their best rate.</p>
+    </div>
+  </div>
+</section>
+
+<section class="fee-section">
+  <h2>We Compare Every Fee</h2>
+  <p>Not just the interest rate. LoanLens breaks down every line on your Loan Estimate so you know exactly what you&rsquo;re paying — and why.</p>
+  <div class="fee-tags">
+    <span class="fee-tag lender">Origination fee</span>
+    <span class="fee-tag lender">Underwriting fee</span>
+    <span class="fee-tag lender">Discount points</span>
+    <span class="fee-tag lender">Application fee</span>
+    <span class="fee-tag lender">Rate lock fee</span>
+    <span class="fee-tag">Title insurance</span>
+    <span class="fee-tag">Settlement fee</span>
+    <span class="fee-tag">Recording fee</span>
+    <span class="fee-tag">Transfer taxes</span>
+    <span class="fee-tag">Homeowner&rsquo;s insurance</span>
+    <span class="fee-tag">Property tax escrow</span>
+    <span class="fee-tag">Flood cert fee</span>
+  </div>
+  <p style="font-size:.82rem;color:#5a6a74">Gold = lender-controlled fees (these vary by lender). Grey = third-party fees (roughly the same everywhere).</p>
+  <br>
+  <a href="/" class="hero-cta">Start Comparing Free &rarr;</a>
+</section>
+
+<section class="cta-section">
+  <h2>Ready to Find the Best Deal?</h2>
+  <p>It takes 30 seconds. No login, no credit check, no obligation.</p>
+  <a href="/" class="btn-primary">Compare My Loan Estimates &rarr;</a>
+</section>
+
+<footer style="background:#0f1923;border-top:1px solid #1e2d3a;padding:28px 32px;text-align:center">
+  <p style="font-size:.8rem;color:#5a6a78;line-height:1.8">
+    &copy; 2025 LoanLens &nbsp;&middot;&nbsp;
+    Provided for informational purposes only. Not financial advice. &nbsp;&middot;&nbsp;
+    <a href="/lenders.html" target="_blank" style="color:#c8922a;text-decoration:none;font-weight:600">Are you a Loan Officer? Advertise on LoanLens &rarr;</a>
+  </p>
+  
+    <div style="border-top:1px solid #1e2d3a;margin-top:16px;padding-top:16px;font-size:.72rem;color:#3a4a54;line-height:1.8;text-align:left;max-width:900px;margin-left:auto;margin-right:auto">
+      <strong style="color:#5a6a74">Licensing &amp; Regulatory Disclosures</strong><br>
+      Jesse Kenner, NMLS #44182 &nbsp;&middot;&nbsp; Mortgage Equity Partners, NMLS #1936 &nbsp;&middot;&nbsp; Providence Branch NMLS #2466854<br>
+      Licensed Mortgage Lender &mdash; Rhode Island License #20224341LL &nbsp;&middot;&nbsp; Licensed in MA &amp; RI<br>
+      Verify license at <a href="https://www.nmlsconsumeraccess.org" target="_blank" style="color:#5a6a74;text-decoration:underline">nmlsconsumeraccess.org</a><br><br>
+      <strong style="color:#5a6a74">&#9632; Equal Housing Lender</strong> &nbsp;&middot;&nbsp;
+      LoanLens is an informational comparison tool and is not a mortgage lender, broker, or financial advisor. Submitting a request does not constitute a loan application and does not obligate you to proceed with any loan. Loan terms are determined solely by the lender. All loans subject to credit approval, underwriting, and applicable federal and state law. Not all borrowers will qualify.
+    </div>
+</footer>
+</body>
+</html>
