@@ -1,11 +1,21 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+<!-- Google Tag Manager -->
+<script>(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
+new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
+j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
+'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
+})(window,document,'script','dataLayer','GTM-M8VRD845');</script>
+<!-- End Google Tag Manager -->
+
+
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>MyLoanLens&trade; -- Apples-to-Apples Loan Estimate Comparison</title>
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700;900&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;1,9..40,400&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://www.google.com/recaptcha/api.js" async defer></script>
 <style>
   :root {
     --ink: #1B4B8A;
@@ -499,6 +509,11 @@
 </style>
 </head>
 <body>
+<!-- Google Tag Manager (noscript) -->
+<noscript><iframe src="https://www.googletagmanager.com/ns.html?id=GTM-M8VRD845"
+height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
+<!-- End Google Tag Manager (noscript) -->
+
 
 <!-- HERO -->
 <nav style="background:#144080;padding:12px 32px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid #2a5a9a">
@@ -786,6 +801,9 @@
           <label class="consent-label" for="consent-check">I have read and agree to the disclosure above and consent to being contacted by the featured loan officer regarding my mortgage estimate request.</label>
         </div>
       </div>
+      <div style="margin:16px 0 8px;display:flex;justify-content:center">
+        <div class="g-recaptcha" data-sitekey="6LcugOssAAAAAMRHHswUnI8yunsySiBMHGSSBYlH" data-callback="onRecaptchaVerified" data-expired-callback="onRecaptchaExpired"></div>
+      </div>
       <button class="btn-submit-request" id="submit-btn" onclick="submitRequest()" disabled>Send Request &rarr;</button>
       <p style="font-size:.72rem;color:var(--muted);text-align:center;margin-top:10px;line-height:1.5">Your info is sent directly to the featured loan officer. No spam &mdash; ever.</p>
     </div>
@@ -974,10 +992,13 @@ function toggleDisclosure() {
 }
 
 function toggleConsentBtn() {
-  var check = document.getElementById('consent-check');
-  var btn   = document.getElementById('submit-btn');
-  if (check && btn) btn.disabled = !check.checked;
+  var check   = document.getElementById('consent-check');
+  var btn     = document.getElementById('submit-btn');
+  var captcha = typeof grecaptcha !== 'undefined' && grecaptcha.getResponse().length > 0;
+  if (check && btn) btn.disabled = !(check.checked && captcha);
 }
+function onRecaptchaVerified() { toggleConsentBtn(); }
+function onRecaptchaExpired()  { toggleConsentBtn(); }
 
 function buildEmailHTML(name, email, phone, propUse, propType, credit, notes, r) {
   var S = 'style=';
@@ -1187,6 +1208,9 @@ function submitRequest() {
   var propType = typeEl ? typeEl.textContent : 'Not selected';
 
   if (!name || !email || !phone) { alert('Please fill in your name, email, and cell phone number.'); return; }
+
+  var recaptchaToken = typeof grecaptcha !== 'undefined' ? grecaptcha.getResponse() : '';
+  if (!recaptchaToken) { alert('Please complete the reCAPTCHA verification.'); return; }
 
   var btn = document.getElementById('submit-btn');
   btn.disabled = true;
@@ -1479,7 +1503,8 @@ function submitRequest() {
       html_report: htmlReport,
       pdf_base64: pdfBase64,
       lo_name: lo.name,
-      date_str: dateStr
+      date_str: dateStr,
+      recaptcha_token: recaptchaToken
     })
   })
   .then(function(res) {
@@ -1507,7 +1532,8 @@ function submitRequest() {
   .catch(function(err) {
     console.error('Send error:', err);
     alert('Error: ' + (err.message || 'Unknown error') + '\n\nCheck the browser console (F12) for details, or call ' + lo.phone + ' directly.');
-    btn.disabled = false;
+    if (typeof grecaptcha !== 'undefined') grecaptcha.reset();
+    btn.disabled = true;
     btn.textContent = 'Send Request →';
   });
 }

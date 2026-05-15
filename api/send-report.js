@@ -13,8 +13,36 @@ module.exports = async function handler(req, res) {
   const {
     from_name, from_email, from_phone,
     prop_use, prop_type, credit_score, prop_zip,
-    notes, html_report, pdf_base64, date_str
+    notes, html_report, pdf_base64, date_str,
+    recaptcha_token
   } = req.body;
+
+  if (!recaptcha_token) {
+    return res.status(400).json({ error: 'reCAPTCHA token missing.' });
+  }
+
+  const captchaVerified = await new Promise((resolve) => {
+    const secret = '6LcugOssAAAAAIvIrS3f32de1c0--VL4ZgeddKZr';
+    const postData = 'secret=' + encodeURIComponent(secret) + '&response=' + encodeURIComponent(recaptcha_token);
+    const options = {
+      hostname: 'www.google.com',
+      path: '/recaptcha/api/siteverify',
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded', 'Content-Length': Buffer.byteLength(postData) }
+    };
+    const req2 = https.request(options, (r2) => {
+      let d = '';
+      r2.on('data', c => { d += c; });
+      r2.on('end', () => { try { resolve(JSON.parse(d).success === true); } catch { resolve(false); } });
+    });
+    req2.on('error', () => resolve(false));
+    req2.write(postData);
+    req2.end();
+  });
+
+  if (!captchaVerified) {
+    return res.status(400).json({ error: 'reCAPTCHA verification failed. Please try again.' });
+  }
 
   const subject = 'LoanLens Estimate Request from ' + (from_name || 'Unknown');
 
