@@ -1,12 +1,21 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+<!-- Google Tag Manager -->
+<script>(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
+new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
+j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
+'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
+})(window,document,'script','dataLayer','GTM-M8VRD845');</script>
+<!-- End Google Tag Manager -->
+
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Advertise on LoanLens -- Loan Officers</title>
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700;900&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;1,9..40,400&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
 <script>emailjs.init("bI0Cyz2FWFNIK8nFF");</script>
+<script src="https://www.google.com/recaptcha/api.js" async defer></script>
 <style>
   :root {
     --ink: #0f1923;
@@ -183,6 +192,11 @@
 </style>
 </head>
 <body>
+<!-- Google Tag Manager (noscript) -->
+<noscript><iframe src="https://www.googletagmanager.com/ns.html?id=GTM-M8VRD845"
+height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
+<!-- End Google Tag Manager (noscript) -->
+
 
 <!-- NAV -->
 <nav class="nav">
@@ -405,6 +419,9 @@
           <div class="cost-row"><span>Total per month</span><span id="cost-total">$0</span></div>
         </div>
 
+        <div style="margin:20px 0 8px;display:flex;justify-content:center">
+          <div class="g-recaptcha" data-sitekey="6LcugOssAAAAAMRHHswUnI8yunsySiBMHGSSBYlH" data-callback="onRecaptchaVerifiedLender" data-expired-callback="onRecaptchaExpiredLender"></div>
+        </div>
         <button class="btn-signup" id="signup-btn" onclick="submitSignup()" disabled>
           Claim Zip Codes &rarr;
         </button>
@@ -629,8 +646,15 @@ function onZipChange(state) {
   if (countEl) countEl.textContent = stateChecked + ' of ' + stateTotal + ' selected';
 
   updateCostSummary();
-  document.getElementById('signup-btn').disabled = selectedZips.length === 0;
+  updateSignupBtn();
 }
+
+function updateSignupBtn() {
+  var captcha = typeof grecaptcha !== 'undefined' && grecaptcha.getResponse().length > 0;
+  document.getElementById('signup-btn').disabled = selectedZips.length === 0 || !captcha;
+}
+function onRecaptchaVerifiedLender() { updateSignupBtn(); }
+function onRecaptchaExpiredLender()  { updateSignupBtn(); }
 
 function updateCostSummary() {
   var count = selectedZips.length;
@@ -660,6 +684,9 @@ function submitSignup() {
   if (!name || !email || !phone) { alert('Please fill in all required contact fields.'); return; }
   if (!verifiedLO) { alert('Please verify your NMLS number before submitting.'); return; }
   if (selectedZips.length === 0) { alert('Please select at least one zip code.'); return; }
+
+  var recaptchaToken = typeof grecaptcha !== 'undefined' ? grecaptcha.getResponse() : '';
+  if (!recaptchaToken) { alert('Please complete the reCAPTCHA verification.'); return; }
 
   var btn = document.getElementById('signup-btn');
   btn.disabled = true;
@@ -699,21 +726,32 @@ function submitSignup() {
     subject: 'LoanLens LO Signup: ' + name + ' (' + nmls + ') - ' + selectedZips.length + ' zips'
   };
 
-  emailjs.send('service_6gytvx4', 'template_cq0gvnc', templateParams)
-    .then(function() {
-      document.getElementById('signup-body').innerHTML = '<div class="success-box">'
-        + '<div class="success-icon">&#10003;</div>'
-        + '<h3>You\'re on the list!</h3>'
-        + '<p>We received your signup for <strong>' + selectedZips.length + ' zip code' + (selectedZips.length > 1 ? 's' : '') + '</strong> at <strong>$' + pricing.total + '/month</strong>.<br><br>'
-        + 'Our team will reach out to <strong>' + email + '</strong> within one business day to complete your setup and process payment.<br><br>'
-        + 'Questions? Email <a href="mailto:jdkenner@me.com" style="color:var(--gold)">jdkenner@me.com</a></p>'
-        + '</div>';
-    }, function(err) {
-      alert('There was a problem submitting your request. Please email jdkenner@me.com directly.');
-      console.error('EmailJS error:', err);
-      btn.disabled = false;
-      btn.textContent = 'Claim Zip Codes \u2192';
-    });
+  fetch('/api/verify-recaptcha', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ recaptcha_token: recaptchaToken })
+  })
+  .then(function(res) { return res.json(); })
+  .then(function(data) {
+    if (!data.success) throw new Error(data.error || 'reCAPTCHA failed');
+    return emailjs.send('service_6gytvx4', 'template_cq0gvnc', templateParams);
+  })
+  .then(function() {
+    document.getElementById('signup-body').innerHTML = '<div class="success-box">'
+      + '<div class="success-icon">&#10003;</div>'
+      + '<h3>You\'re on the list!</h3>'
+      + '<p>We received your signup for <strong>' + selectedZips.length + ' zip code' + (selectedZips.length > 1 ? 's' : '') + '</strong> at <strong>$' + pricing.total + '/month</strong>.<br><br>'
+      + 'Our team will reach out to <strong>' + email + '</strong> within one business day to complete your setup and process payment.<br><br>'
+      + 'Questions? Email <a href="mailto:jdkenner@me.com" style="color:var(--gold)">jdkenner@me.com</a></p>'
+      + '</div>';
+  })
+  .catch(function(err) {
+    alert('There was a problem submitting your request. Please email jdkenner@me.com directly.');
+    console.error('Signup error:', err);
+    if (typeof grecaptcha !== 'undefined') grecaptcha.reset();
+    btn.disabled = false;
+    btn.textContent = 'Claim Zip Codes \u2192';
+  });
 }
 </script>
 </body>
