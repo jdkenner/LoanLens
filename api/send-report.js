@@ -13,6 +13,7 @@ module.exports = async function handler(req, res) {
   const {
     from_name, from_email, from_phone,
     prop_use, prop_type, credit_score, prop_zip,
+    purchase_price, down_payment,
     notes, html_report, pdf_base64, date_str,
     recaptcha_token
   } = req.body;
@@ -57,10 +58,12 @@ module.exports = async function handler(req, res) {
     'Property Type: ' + (prop_type || ''),
     'Credit Score:  ' + (credit_score || ''),
     'Property Zip:  ' + (prop_zip || 'Not available'),
+    purchase_price ? ('Purchase Price: ' + purchase_price) : '',
+    down_payment ? ('Down Payment:   ' + down_payment) : '',
     notes ? ('\nNOTES\n' + notes) : '', '',
     'Full comparison report attached as PDF.',
     'LoanLens -- myloanlens.ai'
-  ].join('\n');
+  ].filter(function(l) { return l !== ''; }).join('\n');
 
   const resendPayload = {
     from: 'LoanLens <onboarding@resend.dev>',
