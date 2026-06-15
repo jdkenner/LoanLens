@@ -751,6 +751,26 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
         <span>&#10022;</span>
         <span id="extracted-text"></span>
       </div>
+      <div id="no-estimate-section" style="display:none">
+        <div class="form-section-label" style="margin-bottom:10px">Loan Details</div>
+        <div class="form-two-col">
+          <div class="form-row">
+            <label>Purchase Price *</label>
+            <input type="text" id="req-purchase-price" placeholder="e.g. $450,000" />
+          </div>
+          <div class="form-row">
+            <label>Down Payment *</label>
+            <input type="text" id="req-down-payment" placeholder="e.g. $90,000 or 20%" />
+          </div>
+        </div>
+        <div class="form-row" style="margin-top:14px">
+          <label>Upload a Loan Estimate <span style="font-weight:400;color:var(--muted)">(optional)</span></label>
+          <div id="req-estimate-drop" onclick="document.getElementById('req-estimate-file').click()" style="border:1.5px dashed var(--border);border-radius:7px;padding:14px;text-align:center;font-size:.85rem;color:var(--muted);cursor:pointer;transition:border-color .2s" onmouseover="this.style.borderColor='var(--gold)'" onmouseout="this.style.borderColor='var(--border)'">
+            <span id="req-estimate-filename">Click to upload PDF or Word document</span>
+          </div>
+          <input type="file" id="req-estimate-file" accept=".pdf,.docx,.doc" style="display:none" onchange="handleModalEstimateFile(this)" />
+        </div>
+      </div>
       <div class="form-row">
         <div class="form-section-label">Property Use</div>
         <div class="pill-group" id="grp-use">
@@ -872,6 +892,7 @@ detectLocationAndSetLO();
 var files = { a: null, b: null, c: null };
 var labels = { a: 'Lender A', b: 'Lender B', c: 'Lender C' };
 var lastResult = null;
+var modalEstimateResult = null;
 
 function handleFile(input, slot) {
   var f = input.files[0];
@@ -930,7 +951,14 @@ function readAsBase64(file) {
 function openModal() {
   document.getElementById('estimate-modal').classList.add('open');
   document.body.style.overflow = 'hidden';
-  if (lastResult) { populateExtractedInfo(lastResult); }
+  var noEstSection = document.getElementById('no-estimate-section');
+  var count = Object.values(files).filter(Boolean).length;
+  if (lastResult) {
+    populateExtractedInfo(lastResult);
+    if (noEstSection) noEstSection.style.display = 'none';
+  } else {
+    if (noEstSection) noEstSection.style.display = count === 0 ? 'block' : 'none';
+  }
 }
 
 function closeModal() {
@@ -978,6 +1006,57 @@ function populateExtractedInfo(r) {
   }
 }
 
+async function handleModalEstimateFile(input) {
+  var f = input.files[0];
+  if (!f) return;
+  var nameEl = document.getElementById('req-estimate-filename');
+  var noticeEl = document.getElementById('extracted-notice');
+  var noticeText = document.getElementById('extracted-text');
+  if (nameEl) nameEl.textContent = f.name;
+  if (noticeEl) noticeEl.style.display = 'flex';
+  if (noticeText) noticeText.textContent = 'Reading estimate…';
+  modalEstimateResult = null;
+
+  var promptLines = [
+    'You are an expert mortgage lending analyst. The user has uploaded ONE Loan Estimate document.',
+    'Extract EVERY fee line item and loan term from the document. Classify each fee:',
+    '- "lender_fee": fees the lender controls (origination, underwriting, points, application, rate lock, courier, credit report, PMI)',
+    '- "third_party": title, settlement, recording, transfer taxes, homeowners insurance, escrow prepaids, flood cert',
+    '- "loan_term": interest rate, APR, loan amount, purchase price, property value, term years, loan type, monthly P&I, prepayment penalty',
+    'CRITICAL: Extract the property zip code from the property address. Include it as property_zip top-level field.',
+    'Return ONLY valid JSON, no markdown, no backticks:',
+    '{"lenders":["Lender Name"],"loan_terms":[{"label":"Interest Rate","category":"loan_term","values":["6.750%"],"note":""},{"label":"Loan Amount","category":"loan_term","values":["320000"],"note":""}],"fees":[{"label":"Origination Fee","category":"lender_fee","values":["1200"],"note":""}],"totals":{"lender_fees_total":["1800"],"cash_to_close":["12500"],"monthly_payment":["1850"]},"rate_analysis":{"loan_amount":["320000"],"interest_rate":["6.750"],"loan_term_years":["30"],"monthly_pi":["2076"]},"property_zip":"02906","insights":"Brief summary.","red_flags":[]}',
+    'Include ALL fees found. Values as plain numbers. Percentages with % sign.'
+  ];
+
+  try {
+    var b64 = await readAsBase64(f);
+    var isWord = /\.(docx?)$/i.test(f.name);
+    var mediaType = isWord ? 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' : 'application/pdf';
+    var response = await fetch('/api/analyze', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-6',
+        max_tokens: 2000,
+        system: promptLines.join('\n'),
+        messages: [{ role: 'user', content: [
+          { type: 'text', text: 'Please extract all data from this Loan Estimate document.' },
+          { type: 'document', source: { type: 'base64', media_type: mediaType, data: b64 } }
+        ]}]
+      })
+    });
+    var data = JSON.parse(await response.text());
+    if (data.error) throw new Error(data.error.message || 'API error');
+    var raw = (data.content || []).map(function(b) { return b.text || ''; }).join('');
+    modalEstimateResult = JSON.parse(raw.replace(/```json|```/g, '').trim());
+    populateExtractedInfo(modalEstimateResult);
+  } catch (err) {
+    console.error('Modal estimate extraction error:', err);
+    if (noticeText) noticeText.textContent = 'Could not read estimate — it will not be included in your request.';
+  }
+}
+
 function toggleDisclosure() {
   var full = document.getElementById('disc-full');
   var btn  = document.getElementById('disc-toggle');
@@ -1000,7 +1079,7 @@ function toggleConsentBtn() {
 function onRecaptchaVerified() { toggleConsentBtn(); }
 function onRecaptchaExpired()  { toggleConsentBtn(); }
 
-function buildEmailHTML(name, email, phone, propUse, propType, credit, notes, r) {
+function buildEmailHTML(name, email, phone, propUse, propType, credit, notes, r, purchasePrice, downPayment) {
   var S = 'style=';
   var tdBase = S + '"padding:8px 12px;border-bottom:1px solid #e0dbd2;font-family:Arial,sans-serif;font-size:13px;vertical-align:top"';
   var tdAmt  = S + '"padding:8px 12px;border-bottom:1px solid #e0dbd2;font-family:Arial,sans-serif;font-size:13px;text-align:right;font-weight:600;vertical-align:top"';
@@ -1068,11 +1147,25 @@ function buildEmailHTML(name, email, phone, propUse, propType, credit, notes, r)
     + '</tr><tr>'
     + '<td ' + S + '"font-size:12px;color:#7a7265;padding:3px 8px 3px 0">Credit Score</td><td ' + S + '"font-size:13px;color:#0f1923;padding:3px 16px 3px 0">' + (credit || 'Not specified') + '</td>'
     + '<td ' + S + '"font-size:12px;color:#7a7265;padding:3px 8px 3px 0">Property Zip</td><td ' + S + '"font-size:13px;color:#0f1923;font-weight:600;padding:3px 16px 3px 0">' + propZip + '</td>'
-    + '</tr></table>'
+    + '</tr>'
+    + ((purchasePrice || downPayment) ? ('<tr>'
+      + '<td ' + S + '"font-size:12px;color:#7a7265;padding:3px 8px 3px 0;width:130px">Purchase Price</td><td ' + S + '"font-size:13px;color:#0f1923;font-weight:600;padding:3px 16px 3px 0">' + (purchasePrice || '—') + '</td>'
+      + '<td ' + S + '"font-size:12px;color:#7a7265;padding:3px 8px 3px 0;width:130px">Down Payment</td><td ' + S + '"font-size:13px;color:#0f1923;font-weight:600;padding:3px 16px 3px 0">' + (downPayment || '—') + '</td>'
+      + '</tr>') : '')
+    + '</table>'
     + '</div>';
 
   if (!r || !lenders.length) {
-    html += '<div ' + S + '"padding:16px 24px;font-size:13px;color:#7a7265">No estimates were uploaded before this request was submitted.</div>';
+    if (purchasePrice || downPayment) {
+      html += '<div ' + S + '"padding:16px 24px;border-bottom:1px solid #d9d2c5">'
+        + '<div ' + S + '"font-size:11px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:#7a7265;margin-bottom:8px">Loan Details Provided</div>'
+        + '<table ' + S + '"width:100%;border-collapse:collapse"><tr>'
+        + '<td ' + S + '"font-size:12px;color:#7a7265;padding:3px 8px 3px 0;width:130px">Purchase Price</td><td ' + S + '"font-size:13px;color:#0f1923;font-weight:600;padding:3px 16px 3px 0">' + (purchasePrice || '—') + '</td>'
+        + '<td ' + S + '"font-size:12px;color:#7a7265;padding:3px 8px 3px 0;width:130px">Down Payment</td><td ' + S + '"font-size:13px;color:#0f1923;font-weight:600;padding:3px">' + (downPayment || '—') + '</td>'
+        + '</tr></table></div>';
+    } else {
+      html += '<div ' + S + '"padding:16px 24px;font-size:13px;color:#7a7265">No estimates were uploaded before this request was submitted.</div>';
+    }
     if (notes) html += '<div ' + S + '"padding:0 24px 16px;font-size:13px;color:#0f1923"><strong>Notes:</strong> ' + notes + '</div>';
     html += '</div>';
     return html;
@@ -1080,7 +1173,7 @@ function buildEmailHTML(name, email, phone, propUse, propType, credit, notes, r)
 
   // Comparison table
   html += '<div ' + S + '"padding:16px 24px 0">'
-    + '<div ' + S + '"font-size:11px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:#7a7265;margin-bottom:10px">Loan Estimate Comparison</div>'
+    + '<div ' + S + '"font-size:11px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:#7a7265;margin-bottom:10px">' + (n === 1 ? 'Loan Estimate Details' : 'Loan Estimate Comparison') + '</div>'
     + '</div>';
 
   html += '<table ' + S + '"width:100%;border-collapse:collapse;margin-bottom:0">';
@@ -1207,7 +1300,14 @@ function submitRequest() {
   var propUse  = useEl  ? useEl.textContent  : 'Not selected';
   var propType = typeEl ? typeEl.textContent : 'Not selected';
 
+  var noEstSection = document.getElementById('no-estimate-section');
+  var isNoEstimate = noEstSection && noEstSection.style.display !== 'none';
+  var purchasePrice = isNoEstimate && document.getElementById('req-purchase-price') ? document.getElementById('req-purchase-price').value.trim() : '';
+  var downPayment = isNoEstimate && document.getElementById('req-down-payment') ? document.getElementById('req-down-payment').value.trim() : '';
+  var estimateData = modalEstimateResult || lastResult;
+
   if (!name || !email || !phone) { alert('Please fill in your name, email, and cell phone number.'); return; }
+  if (isNoEstimate && (!purchasePrice || !downPayment)) { alert('Please enter the purchase price and down payment amount.'); return; }
 
   var recaptchaToken = typeof grecaptcha !== 'undefined' ? grecaptcha.getResponse() : '';
   if (!recaptchaToken) { alert('Please complete the reCAPTCHA verification.'); return; }
@@ -1216,7 +1316,7 @@ function submitRequest() {
   btn.disabled = true;
   btn.textContent = 'Sending…';
 
-  var htmlReport = buildEmailHTML(name, email, phone, propUse, propType, credit, notes, lastResult);
+  var htmlReport = buildEmailHTML(name, email, phone, propUse, propType, credit, notes, estimateData, purchasePrice, downPayment);
 
   var templateParams = {
     from_name: name,
@@ -1238,7 +1338,7 @@ function submitRequest() {
       var jsPDF = window.jspdf.jsPDF;
       var doc = new jsPDF({ orientation: 'portrait', unit: 'pt', format: 'letter' });
       var lo = window.currentLO || LO_REGISTRY.default;
-      var r = lastResult || {};
+      var r = estimateData || {};
       var lenders = r.lenders || [];
       var dateStr = new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
       var pgW = doc.internal.pageSize.getWidth();
@@ -1471,11 +1571,11 @@ function submitRequest() {
 
   // Extract property zip — check top-level field first, then loan_terms
   var propZip = 'Not available';
-  if (lastResult) {
-    if (lastResult.property_zip && lastResult.property_zip !== 'N/A') {
-      propZip = String(lastResult.property_zip).trim();
-    } else if (lastResult.loan_terms) {
-      var zipTerm = lastResult.loan_terms.find(function(t) {
+  if (estimateData) {
+    if (estimateData.property_zip && estimateData.property_zip !== 'N/A') {
+      propZip = String(estimateData.property_zip).trim();
+    } else if (estimateData.loan_terms) {
+      var zipTerm = estimateData.loan_terms.find(function(t) {
         var l = (t.label || '').toLowerCase();
         return l.indexOf('zip') !== -1 || l.indexOf('postal') !== -1 || l.indexOf('property zip') !== -1 || l.indexOf('property address') !== -1;
       });
@@ -1499,6 +1599,8 @@ function submitRequest() {
       prop_type: propType,
       credit_score: credit || 'Not specified',
       prop_zip: propZip,
+      purchase_price: purchasePrice || '',
+      down_payment: downPayment || '',
       notes: notes || '',
       html_report: htmlReport,
       pdf_base64: pdfBase64,
@@ -1569,6 +1671,7 @@ async function extractSingleEstimate() {
     'Include ALL fees found — do not summarize or omit any line items. Values as plain numbers. Percentages with % sign.'
   ];
 
+  var extractFailed = false;
   try {
     var slot = activeFiles[0][0];
     var file = activeFiles[0][1];
@@ -1607,10 +1710,18 @@ async function extractSingleEstimate() {
 
   } catch (err) {
     console.error('Single estimate extraction error:', err);
-    // Open modal anyway — borrower can still request without extracted data
+    extractFailed = true;
   } finally {
     if (loBtn) { loBtn.disabled = false; loBtn.textContent = 'Request Free Estimate →'; }
     openModal();
+    if (extractFailed) {
+      var noEstSection = document.getElementById('no-estimate-section');
+      var noticeEl = document.getElementById('extracted-notice');
+      var noticeText = document.getElementById('extracted-text');
+      if (noEstSection) noEstSection.style.display = 'block';
+      if (noticeEl) noticeEl.style.display = 'flex';
+      if (noticeText) noticeText.textContent = "We couldn’t read your estimate automatically — please fill in your loan details below.";
+    }
   }
 }
 
