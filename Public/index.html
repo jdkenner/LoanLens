@@ -893,6 +893,7 @@ var files = { a: null, b: null, c: null };
 var labels = { a: 'Lender A', b: 'Lender B', c: 'Lender C' };
 var lastResult = null;
 var modalEstimateResult = null;
+var isModalScanning = false;
 
 function handleFile(input, slot) {
   var f = input.files[0];
@@ -1012,10 +1013,13 @@ async function handleModalEstimateFile(input) {
   var nameEl = document.getElementById('req-estimate-filename');
   var noticeEl = document.getElementById('extracted-notice');
   var noticeText = document.getElementById('extracted-text');
-  if (nameEl) nameEl.textContent = f.name;
+  var submitBtn = document.getElementById('submit-btn');
+  if (nameEl) nameEl.textContent = f.name + ' — Reading…';
   if (noticeEl) noticeEl.style.display = 'flex';
-  if (noticeText) noticeText.textContent = 'Reading estimate…';
+  if (noticeText) noticeText.textContent = 'Reading your estimate — please wait before submitting…';
   modalEstimateResult = null;
+  isModalScanning = true;
+  if (submitBtn) submitBtn.disabled = true;
 
   var promptLines = [
     'You are an expert mortgage lending analyst. The user has uploaded ONE Loan Estimate document.',
@@ -1038,7 +1042,7 @@ async function handleModalEstimateFile(input) {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         model: 'claude-sonnet-4-6',
-        max_tokens: 2000,
+        max_tokens: 4000,
         system: promptLines.join('\n'),
         messages: [{ role: 'user', content: [
           { type: 'text', text: 'Please extract all data from this Loan Estimate document.' },
@@ -1049,11 +1053,20 @@ async function handleModalEstimateFile(input) {
     var data = JSON.parse(await response.text());
     if (data.error) throw new Error(data.error.message || 'API error');
     var raw = (data.content || []).map(function(b) { return b.text || ''; }).join('');
-    modalEstimateResult = JSON.parse(raw.replace(/```json|```/g, '').trim());
+    var jsonMatch = raw.match(/\{[\s\S]*\}/);
+    if (!jsonMatch) throw new Error('No JSON found in response');
+    modalEstimateResult = JSON.parse(jsonMatch[0]);
+    if (nameEl) nameEl.textContent = f.name + ' — Scanned';
     populateExtractedInfo(modalEstimateResult);
   } catch (err) {
     console.error('Modal estimate extraction error:', err);
-    if (noticeText) noticeText.textContent = 'Could not read estimate — it will not be included in your request.';
+    if (nameEl) nameEl.textContent = f.name + ' — Could not read';
+    if (noticeText) noticeText.textContent = 'Could not read the estimate — your other details will still be sent.';
+  } finally {
+    isModalScanning = false;
+    var consentCheck = document.getElementById('consent-check');
+    var captchaOk = typeof grecaptcha !== 'undefined' && grecaptcha.getResponse().length > 0;
+    if (submitBtn && consentCheck && consentCheck.checked && captchaOk) submitBtn.disabled = false;
   }
 }
 
@@ -1308,6 +1321,7 @@ function submitRequest() {
 
   if (!name || !email || !phone) { alert('Please fill in your name, email, and cell phone number.'); return; }
   if (isNoEstimate && (!purchasePrice || !downPayment)) { alert('Please enter the purchase price and down payment amount.'); return; }
+  if (isModalScanning) { alert('Please wait — still reading your uploaded estimate.'); return; }
 
   var recaptchaToken = typeof grecaptcha !== 'undefined' ? grecaptcha.getResponse() : '';
   if (!recaptchaToken) { alert('Please complete the reCAPTCHA verification.'); return; }
@@ -1689,7 +1703,7 @@ async function extractSingleEstimate() {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         model: 'claude-sonnet-4-6',
-        max_tokens: 2000,
+        max_tokens: 4000,
         system: promptLines.join('\n'),
         messages: [{ role: 'user', content: contentBlocks }]
       })
@@ -1701,8 +1715,9 @@ async function extractSingleEstimate() {
     if (!data.content || !data.content.length) throw new Error('No response from AI');
 
     var raw = data.content.map(function(b) { return b.text || ''; }).join('');
-    var clean = raw.replace(/```json|```/g, '').trim();
-    var result = JSON.parse(clean);
+    var jsonMatch = raw.match(/\{[\s\S]*\}/);
+    if (!jsonMatch) throw new Error('No JSON found in response');
+    var result = JSON.parse(jsonMatch[0]);
 
     // Store as lastResult so the modal/email picks it up
     lastResult = result;
