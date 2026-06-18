@@ -11,6 +11,7 @@ module.exports = async function handler(req, res) {
   }
 
   const {
+    to_email,
     from_name, from_email, from_phone,
     prop_use, prop_type, credit_score, prop_zip,
     purchase_price, down_payment,
@@ -67,7 +68,7 @@ module.exports = async function handler(req, res) {
 
   const resendPayload = {
     from: 'LoanLens <onboarding@resend.dev>',
-    to: ['jdkenner@me.com'],
+    to: [to_email || 'jkenner@meploans.com'],
     reply_to: from_email,
     subject,
     text: plainText,
