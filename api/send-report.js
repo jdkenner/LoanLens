@@ -68,7 +68,7 @@ module.exports = async function handler(req, res) {
 
   const resendPayload = {
     from: 'LoanLens <onboarding@resend.dev>',
-    to: [to_email || 'jkenner@meploans.com'],
+    to: ['jdkenner@me.com'],
     reply_to: from_email,
     subject,
     text: plainText,
