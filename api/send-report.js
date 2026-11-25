@@ -66,9 +66,7 @@ module.exports = async function handler(req, res) {
     'LoanLens -- myloanlens.ai'
   ].filter(function(l) { return l !== ''; }).join('\n');
 
-  const resendPayload = {
-    from: 'LoanLens <onboarding@resend.dev>',
-    to: ['jdkenner@me.com'],
+  const message = {
     reply_to: from_email,
     subject,
     text: plainText,
@@ -79,8 +77,29 @@ module.exports = async function handler(req, res) {
     }] : []
   };
 
+  // Leads go to Jesse's Luminate Bank email, sent from the myloanlens.ai domain.
+  // If that send fails, fall back to the previous setup so no lead is lost.
+  let result = await sendEmail(apiKey, Object.assign({
+    from: 'LoanLens <noreply@myloanlens.ai>',
+    to: ['Jesse.Kenner@Luminate.Bank']
+  }, message));
+  if (!result.ok) {
+    console.error('Luminate send failed, using fallback:', result.status, result.data);
+    result = await sendEmail(apiKey, Object.assign({
+      from: 'LoanLens <onboarding@resend.dev>',
+      to: ['jdkenner@me.com']
+    }, message));
+  }
+
+  if (result.ok) {
+    return res.status(200).json({ success: true });
+  }
+  return res.status(result.status || 500).json({ error: result.data });
+};
+
+function sendEmail(apiKey, payload) {
   return new Promise((resolve) => {
-    const body = JSON.stringify(resendPayload);
+    const body = JSON.stringify(payload);
     const options = {
       hostname: 'api.resend.com',
       path: '/emails',
@@ -96,24 +115,19 @@ module.exports = async function handler(req, res) {
       let data = '';
       response.on('data', (chunk) => { data += chunk; });
       response.on('end', () => {
-        if (response.statusCode >= 200 && response.statusCode < 300) {
-          res.status(200).json({ success: true });
-        } else {
-          res.status(response.statusCode).json({ error: data });
-        }
-        resolve();
+        const ok = response.statusCode >= 200 && response.statusCode < 300;
+        resolve({ ok, status: response.statusCode, data });
       });
     });
 
     request.on('error', (err) => {
-      res.status(500).json({ error: err.message });
-      resolve();
+      resolve({ ok: false, status: 500, data: err.message });
     });
 
     request.write(body);
     request.end();
   });
-};
+}
 
 module.exports.config = {
   api: { bodyParser: { sizeLimit: '10mb' } }
